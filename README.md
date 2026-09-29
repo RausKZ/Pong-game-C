@@ -1,2 +1,4 @@
-# Pong-game-C
-Simple Pong made in C with the use of raylib
+## Pong-game-C
+The simple game of Pong brought to C by using the library raylib
+# Screenshot
+<img width="799" height="450" alt="screenshot-2026-09-29_12-36-57" src="https://github.com/user-attachments/assets/bb6820e9-29bd-4f82-9dd6-722625cb9d2d" />
