@@ -68,6 +68,7 @@ void ResetPos(int *BallposX, int *BallposY){
 }
 
 int main(){
+    ChangeDirectory(GetWorkingDirectory());
     InitWindow(800, 450, "Pong");
     int BallposX = 400;
     int BallposY = 225;
