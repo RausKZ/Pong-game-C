@@ -1,167 +1,124 @@
 #include "raylib.h"
-#include <time.h> // For randomness
-#include <stdlib.h>
-#include <unistd.h>
-#define MAXBULLETS 500000
 
-void CircleMovement(int *Xaxis, int *Yaxis,int ScreenWidth,int ScreenHeight,int CircleRadius){
-    int FastMovementSpeed = 6;
-    int SlowMovementSpeed = 3;
-    // Y AXIS
+void Movement(Rectangle *Player){
     if(IsKeyDown(KEY_W)){
-        if(IsKeyDown(KEY_LEFT_SHIFT)){
-            *Yaxis-=SlowMovementSpeed;
-        }else{
-            *Yaxis-=FastMovementSpeed;
-        }
+        Player->y-=3;
+        if(Player->y <= 0)
+            Player->y = 0;
     }
     if(IsKeyDown(KEY_S)){
-        if(IsKeyDown(KEY_LEFT_SHIFT)){
-            *Yaxis+=SlowMovementSpeed;
-        }else{
-            *Yaxis+=FastMovementSpeed;
-        }
-    }
-    // X AXIS
-    if(IsKeyDown(KEY_D)){
-        if(IsKeyDown(KEY_LEFT_SHIFT)){
-            *Xaxis+=SlowMovementSpeed;
-        }else{
-            *Xaxis+=FastMovementSpeed;
-        }
-    }
-    if(IsKeyDown(KEY_A)){
-        if(IsKeyDown(KEY_LEFT_SHIFT)){
-            *Xaxis-=SlowMovementSpeed;
-        }else{
-            *Xaxis-=FastMovementSpeed;
-        }
-    }
-    // X AXIS BOUNDARIES
-    if((*Xaxis + CircleRadius) >= (ScreenWidth-  1100 + 700)){
-        *Xaxis = (ScreenWidth-  1100 + 700) - CircleRadius;
-    }
-    if(*Xaxis <= CircleRadius + (ScreenWidth - 1100)){
-        *Xaxis = CircleRadius + (ScreenWidth - 1100);
-    }
-    // Y AXIS BOUNDARIES
-    if((*Yaxis + CircleRadius) >= ScreenHeight){
-        *Yaxis = ScreenHeight - CircleRadius;
-    }
-    if(*Yaxis <= CircleRadius){
-        *Yaxis = CircleRadius;
+        Player->y+=3;
+        if(Player->y >= 300)
+        Player->y = 300;
     }
 }
 
-void ScoreBoard(long int *Score,int ScreenWidth,int ScreenHeight){
-    DrawText(TextFormat("SCORE: %ld", *Score), (ScreenWidth - 300), (300), 30, WHITE);
-    *Score += 1;
+void Movement2(Rectangle *Player){
+    if(IsKeyDown(KEY_UP)){
+        Player->y-=3;
+        if(Player->y <= 0)
+            Player->y = 0;
+    }
+    if(IsKeyDown(KEY_DOWN)){
+        Player->y+=3;
+        if(Player->y >= 300)
+        Player->y = 300;
+    }
 }
 
+void Ballphysics(int *BallposX, int *BallposY,int check){
+    int static count = 0;
+    int static count2 = 0;
+    if(check == 1){
+        count2++;
+    }
+    if(count%2==0){
+        *BallposY -= 3;
+    }else{
+        *BallposY += 3;
+    }
+    if(count2%2==0){
+        *BallposX -= 3;
+    }else{
+        *BallposX += 3;
+    }
+    if((*BallposY + 10) >= 450 || (*BallposY - 10) <= 0){
+        count++;
+    }
+    if((*BallposX - 10) <= 0 ||(*BallposX + 10) >= 800){
+        count2++;
+    }
+}
 
+void Scoreboard(int Score){
+    int static Score1 = 0;
+    int static Score2 = 0;
+    if(Score == 0){
+        Score1++;
+    }else if (Score == 1){
+        Score2++;
+    }
+    DrawText(TextFormat("%d", Score1),350, 20, 20, WHITE);
+    DrawText(TextFormat("%d", Score2),450, 20, 20, WHITE);
+}
 
-typedef struct{
-    Vector2 position;
-    Vector2 Acceleration;
-    bool disabled;
-    Color color;
-}Bullets;
-
-typedef struct{
-    int MovementCircleX;
-    int MovementCircleY;
-}Player;
+void ResetPos(int *BallposX, int *BallposY){
+    *BallposX = 400;
+    *BallposY = 225;
+}
 
 int main(){
-    srand(time(NULL));
-    // SCREEN SETTINGS
-        const int ScreenWidth = 1280;
-        const int ScreenHeight = 920;
-    InitWindow(ScreenWidth,ScreenHeight,"Bullet hell");
-    // PLAYER
-        Player player = {640,460};
-        int CircleRadius = 5;
-    // BULLET STUFF
-        Bullets *bullets = malloc(MAXBULLETS*sizeof(Bullets)); 
-        int bulletCount = 0;
-        int bulletDisabledCount = 0;
-        Vector2 Size = {10,20};
-        Color color = BLUE;
-    // SPAWNING STUFF 
-        float spawnCooldown = 3;
-        float spawnCooldownTimer = spawnCooldown;
-    // Score
-        long int Score = 0;
-    // GAMEOVER Screen
-        bool GameOver = false;
-    SetTargetFPS(60);
-    mainloop:
+    ChangeDirectory(GetWorkingDirectory());
+    InitWindow(800, 450, "Pong");
+    int BallposX = 400;
+    int BallposY = 225;
+    int Ballspeed = 3;
+    int gamespeed = 60;
+    Rectangle PLAYER1 = {50,150,20,150};
+    Rectangle PLAYER2 = {750,150,20,150};
+    SetTargetFPS(gamespeed);
     while(!WindowShouldClose()){
-        if(bulletCount >= MAXBULLETS){
-            bulletCount = 0;
-            bulletDisabledCount = 0;
-        }
-        spawnCooldownTimer--;
-        if(spawnCooldownTimer < 0){
-            spawnCooldownTimer = spawnCooldown;
-            if(bulletCount < MAXBULLETS){
-                    bullets[bulletCount].disabled = false;
-                    bullets[bulletCount].position = (Vector2){(float)(rand()%((ScreenWidth-  1100 + 700) - (ScreenWidth - 1100) + 1) + (ScreenWidth - 1100)), 0.0f};
-                    bullets[bulletCount].color = BLUE;
-                    bullets[bulletCount].Acceleration = (Vector2){0,20};
-                    bulletCount++;
-            }
-        }
-        for(int i = 0; i < bulletCount;i++){
-            if(!bullets[i].disabled){
-                bullets[i].position.y += bullets[i].Acceleration.y;
-            }
-            if(bullets[i].position.y > ScreenHeight || bullets[i].position.y < 0){
-                bullets[i].disabled = true;
-            }
-        }
-
-        CircleMovement(&player.MovementCircleX,&player.MovementCircleY,ScreenWidth,ScreenHeight,CircleRadius);
-        Vector2 Player = {player.MovementCircleX,player.MovementCircleY};
-
         BeginDrawing();
             ClearBackground(BLACK);
-            DrawCircle(player.MovementCircleX,player.MovementCircleY,CircleRadius,WHITE);
-            DrawCircleLines(player.MovementCircleX,player.MovementCircleY,CircleRadius,RED);
-            ScoreBoard(&Score,ScreenWidth,ScreenHeight);
-                for(int i = 0; i<bulletCount; i++){
-                    if(!bullets[i].disabled)
-                        DrawRectangleV(bullets[i].position,Size,BLUE);
-                        Rectangle bullet1 = {bullets[i].position.x, bullets[i].position.y, Size.x, Size.y};
-                        if(CheckCollisionCircleRec(Player, CircleRadius, bullet1)){
-                            EndDrawing();
-                            GameOver = true;
-                            goto failed;
-                        }
+                Scoreboard(3);
+            DrawRectangleRec(PLAYER1,WHITE);
+                Movement(&PLAYER1);
+            DrawRectangleRec(PLAYER2,WHITE);
+                Movement2(&PLAYER2);
+            DrawCircle(BallposX,BallposY,10,WHITE);
+                Ballphysics(&BallposX,&BallposY,0);
+        Vector2 Ball = {BallposX,BallposY};
+        if(CheckCollisionCircleRec(Ball,10,PLAYER1)){
+            Ballphysics(&BallposX,&BallposY,1);
+            gamespeed*=2;
+            if(gamespeed >= 240){
+                gamespeed = 240;
             }
-            DrawRectangleLines((ScreenWidth)-1100,0,700,ScreenHeight,WHITE);
-        EndDrawing();
+            SetTargetFPS(gamespeed);
+        }
+        if(CheckCollisionCircleRec(Ball,10,PLAYER2)){
+            Ballphysics(&BallposX,&BallposY,1);
+            gamespeed*=2;
+            if(gamespeed >= 240){
+                gamespeed = 240;
+            }
+            SetTargetFPS(gamespeed);
+        }
+        if((BallposX -10) == 0){
+            ResetPos(&BallposX,&BallposY);
+            Scoreboard(1);
+            gamespeed = 60;
+            SetTargetFPS(gamespeed);
+        }else if((BallposX + 10) == 800){
+            ResetPos(&BallposX,&BallposY);
+            Scoreboard(0);
+            gamespeed = 60;
+            SetTargetFPS(gamespeed);
+        }
+            EndDrawing();    
     };
-    failed:
-    if(GameOver){
-            while(!WindowShouldClose()){
-                BeginDrawing();
-                    ClearBackground(RED);
-                    DrawText(TextFormat("GAME OVER\nPress Space to close\nor enter to continue"),(ScreenWidth/2) - 30 * 5,ScreenHeight/2,30,BLACK);
-                    DrawText(TextFormat("Your Score: %ld", Score), (ScreenWidth - 300), (300), 30, WHITE);
-                    if(IsKeyDown(KEY_SPACE)){
-                        goto ending;
-                    }
-                    if(IsKeyDown(KEY_ENTER)){
-                        Score = 0;
-                        goto mainloop;
-                    }
-                EndDrawing();
-            };
 
-    }
-    ending:
     CloseWindow();
-    free(bullets);
+
     return 0;
 }
